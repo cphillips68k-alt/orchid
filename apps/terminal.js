@@ -1,7 +1,7 @@
 // terminal.js — Orchid terminal, dark pane inside light window
 import { h } from 'https://esm.sh/preact';
 import { useState, useEffect, useRef } from 'https://esm.sh/preact/hooks';
-import { getFS } from './sys/fs.js';
+import { getFS } from '/sys/fs.js';
 
 const C = {
     prompt: '#5b9bd5',

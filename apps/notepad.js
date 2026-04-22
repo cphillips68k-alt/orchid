@@ -1,8 +1,8 @@
 // notepad.js — Orchid light theme
 import { h } from 'https://esm.sh/preact';
 import { useState, useEffect, useRef } from 'https://esm.sh/preact/hooks';
-import { getFS } from './sys/fs.js';
-import { bus } from './sys/bus.js';
+import { getFS } from '/sys/fs.js';
+import { bus } from '/sys/bus.js';
 
 const btn = (accent) => `
     background: ${accent ? 'rgba(94,53,177,0.1)' : 'rgba(0,0,0,0.05)'};

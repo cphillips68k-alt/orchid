@@ -1,8 +1,8 @@
 // filemanager.js — Orchid light theme
 import { h } from 'https://esm.sh/preact';
 import { useState, useEffect, useRef, useCallback } from 'https://esm.sh/preact/hooks';
-import { getFS } from './sys/fs.js';
-import { bus } from './sys/bus.js';
+import { getFS } from '/sys/fs.js';
+import { bus } from '/sys/bus.js';
 
 const SEL = '#5e35b1';
 const DIR = '#1565c0';

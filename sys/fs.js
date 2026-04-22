@@ -1,7 +1,7 @@
 // fs.js — Virtual Filesystem Engine
 // Tree structure: { type: 'dir'|'file', name, children?: {}, content?: string, created, modified }
 
-const FS_KEY = 'dreamos_fs';
+const FS_KEY = 'fs';
 
 function defaultFS() {
     return {
@@ -18,7 +18,7 @@ function defaultFS() {
                         children: {
                             'readme.txt': {
                                 type: 'file', name: 'readme.txt',
-                                content: 'Welcome to Dream OS.\nYour personal userspace lives here.\n',
+                                content: 'Welcome to Orchid.\nYour personal userspace lives here.\n',
                                 created: Date.now(), modified: Date.now()
                             },
                             'notes.txt': {
@@ -35,7 +35,7 @@ function defaultFS() {
                 children: {
                     'motd': {
                         type: 'file', name: 'motd',
-                        content: 'Dream OS — Vibe Edition\nKernel: L4/Genode\nStatus: operational\n',
+                        content: 'OS: Orchid\nKernel: Web\nStatus: operational\n',
                         created: Date.now(), modified: Date.now()
                     }
                 }
