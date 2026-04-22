@@ -43,58 +43,67 @@ export default function Surfer() {
     };
 
     return h('div', {
-        style: 'display:flex; flex-direction:column; height:100%; background:#f0f0f0; overflow:hidden;'
+        style: 'display:flex; flex:1; min-height:0; background:#e7eef8; overflow:hidden; border-radius:14px;'
     }, [
-        // Tab Bar
         h('div', {
-            style: 'display:flex; background:#d0d0d0; padding:6px 6px 0; gap:4px; align-items:center; border-bottom:1px solid #bbb;'
+            style: 'width:240px; min-width:240px; display:flex; flex-direction:column; gap:14px; padding:16px; background:#f4f7fb; border-right:1px solid rgba(15,23,42,0.08);'
         }, [
-            tabs.map(tab => h('div', {
-                onClick: () => { setActiveTabId(tab.id); setInputUrl(tab.url); },
-                              style: `
-                              display:flex; align-items:center; gap:10px; padding:6px 14px; font-size:11px; border-radius:6px 6px 0 0; cursor:pointer;
-                              background: ${tab.id === activeTabId ? '#fff' : 'rgba(255,255,255,0.3)'};
-                              color: ${tab.id === activeTabId ? '#000' : '#555'};
-                              border: 1px solid ${tab.id === activeTabId ? '#bbb' : 'transparent'};
-                              border-bottom: none;
-                              transition: background 0.2s;
-                              `
+            h('div', { style: 'font-size:14px; font-weight:700; color:#1f2937; letter-spacing:0.02em;' }, 'Browser tabs'),
+            h('div', { style: 'flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px;' },
+                tabs.map(tab => h('button', {
+                    key: tab.id,
+                    type: 'button',
+                    onClick: () => { setActiveTabId(tab.id); setInputUrl(tab.url); },
+                    style: `display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; padding:12px 14px; border-radius:14px; border:1px solid ${tab.id === activeTabId ? '#5b9bd5' : 'transparent'}; background:${tab.id === activeTabId ? '#ffffff' : 'rgba(255,255,255,0.92)'}; color:${tab.id === activeTabId ? '#111827' : '#475569'}; cursor:pointer; text-align:left; font-size:13px; box-shadow:${tab.id === activeTabId ? '0 12px 30px rgba(91,155,213,0.12)' : 'none'};`,
+                }, [
+                    h('span', { style: 'flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' }, tab.title),
+                    h('span', {
+                        onClick: (e) => closeTab(e, tab.id),
+                        style: 'flex-shrink:0; color:#64748b; font-size:16px; opacity:0.7;'
+                    }, '×')
+                ]))
+            ),
+            h('button', {
+                onClick: addTab,
+                style: 'border:none; background:#5b9bd5; color:white; padding:12px 14px; border-radius:14px; cursor:pointer; font-size:13px; font-weight:700; box-shadow:0 10px 25px rgba(91,155,213,0.16);'
+            }, '+ New tab')
+        ]),
+        h('div', { style: 'flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:#f8fbff;' }, [
+            h('div', {
+                style: 'display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; background:#fff; border-bottom:1px solid #e2e8f0;'
             }, [
-                h('span', { style: 'max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' }, tab.title),
-                              h('span', {
-                                  onClick: (e) => closeTab(e, tab.id),
-                                style: 'font-weight:bold; opacity:0.4; font-size:14px;'
-                              }, '×')
-            ])),
-          h('button', {
-              onClick: addTab,
-              style: 'border:none; background:transparent; font-size:20px; cursor:pointer; color:#666; padding-bottom:4px;'
-          }, '+')
-        ]),
-
-        // URL bar
-        h('form', {
-            onSubmit: navigate,
-          style: 'display:flex; padding:6px 10px; background:#fff; border-bottom:1px solid #ddd;'
-        }, [
-            h('input', {
-                value: inputUrl,
-                onInput: (e) => setInputUrl(e.target.value),
-              style: 'flex:1; padding:5px 12px; border-radius:4px; border:1px solid #ccc; font-size:12px; outline:none; background:#f9f9f9;'
-            })
-        ]),
-
-        // The Magic Iframe
-        h('div', { style: 'flex:1; background:#fff; position:relative;' }, [
-            h('iframe', {
-                src: activeTab.url,
-                /* Removing 'allow-popups' ensures that target="_blank" links
-                 *                  are forced to try and open within the frame (or fail gracefully)
-                 *                  rather than opening a real browser tab.
-                 */
-                sandbox: 'allow-forms allow-scripts allow-same-origin',
-                style: 'width:100%; height:100%; border:none;'
-            })
+                h('div', { style: 'min-width:0; flex:1; display:flex; flex-direction:column; gap:6px; overflow:hidden;' }, [
+                    h('div', { style: 'font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.14em;' }, 'Current tab'),
+                    h('div', { style: 'font-size:16px; font-weight:700; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' }, activeTab.title)
+                ]),
+                h('button', {
+                    type: 'button',
+                    onClick: addTab,
+                    style: 'border:none; background:rgba(91,155,213,0.12); color:#1d4ed8; padding:10px 16px; border-radius:12px; cursor:pointer; font-size:13px; font-weight:700;'
+                }, 'New tab')
+            ]),
+            h('form', {
+                onSubmit: navigate,
+                style: 'display:flex; gap:10px; padding:14px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0;'
+            }, [
+                h('input', {
+                    value: inputUrl,
+                    onInput: (e) => setInputUrl(e.target.value),
+                    placeholder: 'Enter a URL or search terms',
+                    style: 'flex:1; padding:12px 14px; border-radius:14px; border:1px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:14px; outline:none;'
+                }),
+                h('button', {
+                    type: 'submit',
+                    style: 'border:none; background:#5b9bd5; color:white; padding:12px 18px; border-radius:14px; cursor:pointer; font-size:14px; font-weight:700;'
+                }, 'Go')
+            ]),
+            h('div', { style: 'flex:1; min-height:0; background:#ffffff; position:relative; overflow:hidden;' }, [
+                h('iframe', {
+                    src: activeTab.url,
+                    sandbox: 'allow-forms allow-scripts allow-same-origin',
+                    style: 'width:100%; height:100%; border:none;'
+                })
+            ])
         ])
     ]);
 }

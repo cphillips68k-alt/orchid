@@ -13,14 +13,14 @@ const ACCENTS = {
 };
 
 const section = (title, children) => h('div', {
-    style: 'margin-bottom:22px;'
+    style: 'margin-bottom:22px; color:inherit;'
 }, [
-    h('div', { style: 'font-size:13px; font-weight:700; color:#2a2a2a; margin-bottom:10px;' }, title),
+    h('div', { style: 'font-size:13px; font-weight:700; color:inherit; margin-bottom:10px;' }, title),
     children
 ]);
 
 const control = (label, input, hint) => h('label', {
-    style: 'display:flex; flex-direction:column; gap:6px; font-size:13px; color:#444; margin-bottom:14px;'
+    style: 'display:flex; flex-direction:column; gap:6px; font-size:13px; color:inherit; margin-bottom:14px;'
 }, [
     h('span', { style: 'display:flex; justify-content:space-between; align-items:center; gap:12px;' }, [
         h('span', { style: 'flex:1; min-width:0;' }, label),
@@ -49,16 +49,20 @@ export default function Settings() {
         alert('Filesystem has been reset.');
     };
 
+    const themeBackground = prefs.theme === 'dark' ? '#12131d' : '#fafafa';
+    const themeText = prefs.theme === 'dark' ? '#f7f7fb' : '#1a1a1a';
+    const themePanel = prefs.theme === 'dark' ? '#1f2130' : '#ffffff';
+    const borderColor = prefs.theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
     return h('div', {
-        style: 'display:flex; flex-direction:column; height:100%; background:#fafafa; padding:18px;'
+        style: `display:flex; flex-direction:column; height:100%; min-height:0; overflow:auto; background:${themeBackground}; color:${themeText}; padding:18px;`
     }, [
-        h('div', { style: 'font-size:17px; font-weight:700; color:#1a1a1a; margin-bottom:18px;' }, 'Settings'),
+        h('div', { style: `font-size:17px; font-weight:700; color:${themeText}; margin-bottom:18px;` }, 'Settings'),
 
         section('Appearance', h('div', null, [
             control('Theme', h('select', {
                 value: prefs.theme,
                 onChange: e => update('theme', e.target.value),
-                style: 'padding:9px 10px; border:1px solid rgba(0,0,0,0.12); border-radius:10px; background:white; color:#1a1a1a;'
+                style: `padding:9px 10px; border:1px solid ${borderColor}; border-radius:10px; background:${themePanel}; color:${themeText};`
             }, [
                 h('option', { value: 'light' }, 'Light'),
                 h('option', { value: 'dark' }, 'Dark')
@@ -66,12 +70,12 @@ export default function Settings() {
             control('Accent color', h('select', {
                 value: prefs.accent,
                 onChange: e => update('accent', e.target.value),
-                style: 'padding:9px 10px; border:1px solid rgba(0,0,0,0.12); border-radius:10px; background:white; color:#1a1a1a;'
+                style: `padding:9px 10px; border:1px solid ${borderColor}; border-radius:10px; background:${themePanel}; color:${themeText};`
             }, Object.entries(ACCENTS).map(([key, value]) => h('option', { value: key }, key.charAt(0).toUpperCase() + key.slice(1)))), 'Accent color for taskbar and highlight text.'),
             control('Window blur', h('select', {
                 value: prefs.windowBlur,
                 onChange: e => update('windowBlur', e.target.value),
-                style: 'padding:9px 10px; border:1px solid rgba(0,0,0,0.12); border-radius:10px; background:white; color:#1a1a1a;'
+                style: `padding:9px 10px; border:1px solid ${borderColor}; border-radius:10px; background:${themePanel}; color:${themeText};`
             }, [
                 h('option', { value: 'soft' }, 'Soft'),
                 h('option', { value: 'medium' }, 'Medium'),
@@ -80,7 +84,7 @@ export default function Settings() {
             control('Terminal theme', h('select', {
                 value: prefs.terminalTheme,
                 onChange: e => update('terminalTheme', e.target.value),
-                style: 'padding:9px 10px; border:1px solid rgba(0,0,0,0.12); border-radius:10px; background:white; color:#1a1a1a;'
+                style: `padding:9px 10px; border:1px solid ${borderColor}; border-radius:10px; background:${themePanel}; color:${themeText};`
             }, [
                 h('option', { value: 'auto' }, 'Follow Orchid theme'),
                 h('option', { value: 'light' }, 'Light'),
@@ -92,7 +96,7 @@ export default function Settings() {
             control('Taskbar position', h('select', {
                 value: prefs.taskbarPosition,
                 onChange: e => update('taskbarPosition', e.target.value),
-                style: 'padding:9px 10px; border:1px solid rgba(0,0,0,0.12); border-radius:10px; background:white; color:#1a1a1a;'
+                style: `padding:9px 10px; border:1px solid ${borderColor}; border-radius:10px; background:${themePanel}; color:${themeText};`
             }, [
                 h('option', { value: 'bottom' }, 'Bottom'),
                 h('option', { value: 'top' }, 'Top'),

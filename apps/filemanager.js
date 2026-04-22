@@ -106,7 +106,7 @@ export default function FileManager() {
 
     const dis = (cond) => cond ? '' : 'opacity:0.35;pointer-events:none;';
 
-    return h('div', { style: 'display:flex; flex-direction:column; height:360px; font-family:"DM Sans",system-ui; background:#fafafa;' }, [
+    return h('div', { style: 'display:flex; flex-direction:column; flex:1; min-height:0; font-family:"DM Sans",system-ui; background:#fafafa; overflow:hidden;' }, [
         // Toolbar
         h('div', { style: 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid ' + BORDER + '; align-items:center; flex-shrink:0; background:rgba(255,255,255,0.7); flex-wrap:wrap;' }, [
             h('button', { onClick: goUp, style: tbtn }, '↑ Up'),
