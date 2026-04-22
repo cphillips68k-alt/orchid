@@ -11,6 +11,7 @@
             --lime:   #c8e05a;
             --yellow: #f0d050;
             --gray:   #7a8590;
+            --accent: #5b9bd5;
 
             --win-bg:          rgba(255, 255, 255, 0.72);
             --win-border:      rgba(255, 255, 255, 0.9);
@@ -18,6 +19,19 @@
             --titlebar-bg:     rgba(255, 255, 255, 0.55);
             --titlebar-text:   #2a2a2a;
             --titlebar-border: rgba(0,0,0,0.07);
+            --window-blur: 28px;
+        }
+
+        :root[data-theme='dark'] {
+            --win-bg: rgba(18, 22, 32, 0.92);
+            --win-border: rgba(255, 255, 255, 0.08);
+            --titlebar-bg: rgba(22, 26, 38, 0.82);
+            --titlebar-text: #f5f5f5;
+            --titlebar-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body[data-theme='dark']::before {
+            background: rgba(0,0,0,0.22);
         }
 
         * { box-sizing: border-box; }
@@ -129,7 +143,7 @@
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 2.5px;
-            color: var(--blue);
+            color: var(--accent);
             text-transform: uppercase;
             padding-right: 12px;
             border-right: 1px solid rgba(0,0,0,0.1);
@@ -156,6 +170,42 @@
             box-shadow: 0 10px 24px rgba(0,0,0,0.14);
             border-color: rgba(0,0,0,0.1);
         }
+        .taskbar.compact {
+            padding: 8px 14px;
+            gap: 8px;
+        }
+        .taskbar.compact .app-icon {
+            width: 38px;
+            height: 38px;
+        }
+        .taskbar.top {
+            top: 20px;
+            bottom: auto;
+            transform: translateX(-50%);
+        }
+        .taskbar.left, .taskbar.right {
+            top: 50%;
+            bottom: auto;
+            transform: translateY(-50%);
+            flex-direction: column;
+            border-radius: 28px;
+            padding: 14px 12px;
+        }
+        .taskbar.left { left: 20px; right: auto; }
+        .taskbar.right { right: 20px; left: auto; }
+        .taskbar.labels .app-icon {
+            flex-direction: column;
+        }
+        .taskbar.labels .app-icon span {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+            max-width: 72px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
@@ -166,22 +216,24 @@
         import { useState, useEffect, useRef } from 'https://esm.sh/preact/hooks';
 
         // --- CORE SYSTEM SERVICES ---
-        import { bus }     from './sys/bus.js';
-        import { getFS }   from './sys/fs.js';
+        import { bus }      from './sys/bus.js';
+        import { getFS }    from './sys/fs.js';
+        import { settings } from './sys/settings.js';
 
         // --- USERSPACE APPLICATIONS ---
-        import Terminal    from './apps/terminal.js';
-        import Clock       from './apps/clock.js';
-        import Notepad     from './apps/notepad.js';
-        import Surfer      from './apps/surfer.js';
-        import FileManager from './apps/filemanager.js';
+        import { APPS } from './sys/registry.js';
 
-        const APPS = {
-            surfer:      { title: '🏄 Surfer',         icon: '🏄', component: Surfer,      width: 800 },
-            terminal:    { title: '⌨️  Terminal',     icon: '⌨️', component: Terminal,    width: 560 },
-            clock:       { title: '🕒  Clock',        icon: '🕒', component: Clock,       width: 300 },
-            notepad:     { title: '📝  Notepad',      icon: '📝', component: Notepad,      width: 520 },
-            filemanager: { title: '🗂  File Manager', icon: '🗂', component: FileManager, width: 400 },
+        const ACCENT_COLORS = {
+            blue: '#5b9bd5',
+            coral: '#e8736a',
+            mint: '#a8d5c8',
+            lime: '#c8e05a'
+        };
+
+        const BLUR_VALUES = {
+            soft: '18px',
+            medium: '28px',
+            strong: '42px'
         };
 
         function WelcomeCard() {
@@ -276,15 +328,49 @@
         }
 
         function Desktop() {
-            const [windows, setWindows] = useState([
-                { id: 1, appKey: 'welcome', title: 'Orchid', x: 60, y: 55, width: 310, component: WelcomeCard }
-            ]);
+            const rootSettings = settings.get();
+            const [prefs, setPrefs] = useState(rootSettings);
+            const [windows, setWindows] = useState(
+                rootSettings.showWelcome
+                    ? [{ id: 1, appKey: 'welcome', title: 'Orchid', x: 60, y: 55, width: 310, component: WelcomeCard }]
+                    : []
+            );
             const [topZ, setTopZ] = useState(10);
-            const [windowZs, setWindowZs] = useState({ 1: 10 });
+            const [windowZs, setWindowZs] = useState(rootSettings.showWelcome ? { 1: 10 } : {});
             const appWindowMap = useRef({});
 
             useEffect(() => {
-                const unsub = bus.on('focus-app', (appKey) => {
+                document.documentElement.dataset.theme = rootSettings.theme;
+                document.documentElement.style.setProperty('--accent', ACCENT_COLORS[rootSettings.accent] ?? '#5b9bd5');
+                document.documentElement.style.setProperty('--window-blur', BLUR_VALUES[rootSettings.windowBlur] ?? '28px');
+
+                const unsubSettings = settings.onChange((next) => {
+                    document.documentElement.dataset.theme = next.theme;
+                    document.documentElement.style.setProperty('--accent', ACCENT_COLORS[next.accent] ?? '#5b9bd5');
+                    document.documentElement.style.setProperty('--window-blur', BLUR_VALUES[next.windowBlur] ?? '28px');
+                    setPrefs(next);
+                    setWindows(prev => {
+                        const hasWelcome = prev.some(w => w.appKey === 'welcome');
+                        if (next.showWelcome && !hasWelcome) {
+                            return [{ id: 1, appKey: 'welcome', title: 'Orchid', x: 60, y: 55, width: 310, component: WelcomeCard }, ...prev];
+                        }
+                        if (!next.showWelcome) {
+                            return prev.filter(w => w.appKey !== 'welcome');
+                        }
+                        return prev;
+                    });
+                    setWindowZs(prev => {
+                        const nextZ = { ...prev };
+                        if (next.showWelcome) nextZ[1] = 10;
+                        else delete nextZ[1];
+                        return nextZ;
+                    });
+                });
+                return unsubSettings;
+            }, []);
+
+            useEffect(() => {
+                const unsubFocus = bus.on('focus-app', (appKey) => {
                     const id = appWindowMap.current[appKey];
                     if (id != null) {
                         const newZ = topZ + 1;
@@ -294,8 +380,22 @@
                         launch(appKey);
                     }
                 });
-                return unsub;
-            }, [topZ]);
+
+                const unsubCloseRequest = bus.on('close-window', (id) => {
+                    const window = windows.find(w => w.id === id);
+                    if (window) closeWindow(id, window.appKey);
+                });
+
+                const unsubTaskList = bus.on('request-task-list', () => {
+                    windows.forEach(w => bus.emit('window-opened', { id: w.id, title: w.title, appKey: w.appKey }));
+                });
+
+                return () => {
+                    unsubFocus();
+                    unsubCloseRequest();
+                    unsubTaskList();
+                };
+            }, [topZ, windows]);
 
             const launch = (appKey) => {
                 const app = APPS[appKey];
@@ -313,9 +413,11 @@
                     width: app.width,
                     component: app.component
                 }]);
+                bus.emit('window-opened', { id: newId, title: app.title, appKey });
             };
 
             const closeWindow = (id, appKey) => {
+                bus.emit('window-closed', id);
                 setWindows(prev => prev.filter(w => w.id !== id));
                 setWindowZs(prev => { const n = { ...prev }; delete n[id]; return n; });
                 if (appWindowMap.current[appKey] === id) delete appWindowMap.current[appKey];
@@ -337,14 +439,20 @@
                     onClose: () => closeWindow(w.id, w.appKey),
                     onFocus: () => focusWindow(w.id, w.appKey)
                 }, h(w.component))),
-
-                h('div', { class: 'taskbar' }, [
+                h('div', { class: `taskbar${prefs.compactTaskbar ? ' compact' : ''} ${prefs.taskbarPosition} ${prefs.showTaskbarLabels ? 'labels' : ''}` }, [
                     h('span', { class: 'taskbar-label' }, 'Orchid'),
-                    ...Object.keys(APPS).map(key => h('button', {
+                    ...Object.entries(APPS).map(([key, app]) => h('button', {
                         class: 'app-icon',
                         onClick: () => launch(key),
-                        title: APPS[key].title
-                    }, APPS[key].icon))
+                        title: app.title
+                    }, [
+                        h('img', {
+                            src: app.iconUrl,
+                            alt: app.title,
+                            style: 'width:22px; height:22px;'
+                        }),
+                        prefs.showTaskbarLabels && h('span', null, app.title)
+                    ]))
                 ])
             ]);
         }

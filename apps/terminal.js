@@ -2,15 +2,27 @@
 import { h } from 'https://esm.sh/preact';
 import { useState, useEffect, useRef } from 'https://esm.sh/preact/hooks';
 import { getFS } from '/sys/fs.js';
+import { settings } from '/sys/settings.js';
 
-const C = {
-    prompt: '#5b9bd5',
-    err:    '#e8736a',
-    dir:    '#5b9bd5',
-    info:   '#aaa',
-    out:    '#1a1a1a',
-    bg:     '#1e2128',
-    inputBg:'#161a20',
+const PALETTES = {
+    dark: {
+        prompt: '#5b9bd5',
+        err:    '#e8736a',
+        dir:    '#5b9bd5',
+        info:   '#aaa',
+        out:    '#e0e0e0',
+        bg:     '#1e2128',
+        inputBg:'#161a20',
+    },
+    light: {
+        prompt: '#5b9bd5',
+        err:    '#e8736a',
+        dir:    '#5b9bd5',
+        info:   '#555',
+        out:    '#1a1a1a',
+        bg:     '#fafafa',
+        inputBg:'#f3f4f6',
+    }
 };
 
 function parseLine(raw) {
@@ -43,6 +55,10 @@ const HELP = `Available commands:
 
 export default function Terminal() {
     const fs = getFS();
+    const [prefs, setPrefs] = useState(settings.get());
+    useEffect(() => settings.onChange(setPrefs), []);
+    const theme = prefs.terminalTheme === 'auto' ? prefs.theme : prefs.terminalTheme;
+    const C = PALETTES[theme === 'dark' ? 'dark' : 'light'];
     const [cwd, setCwd] = useState('/home/user');
     const [history, setHistory] = useState([
         { type: 'info', text: 'Orchid Terminal — type "help" for commands' },
