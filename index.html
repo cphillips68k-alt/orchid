@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Orchid</title>
+    <style>
+        :root {
+            --blue:   #5b9bd5;
+            --coral:  #e8736a;
+            --mint:   #a8d5c8;
+            --lime:   #c8e05a;
+            --yellow: #f0d050;
+            --gray:   #7a8590;
+
+            --win-bg:          rgba(255, 255, 255, 0.72);
+            --win-border:      rgba(255, 255, 255, 0.9);
+            --win-shadow:      0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+            --titlebar-bg:     rgba(255, 255, 255, 0.55);
+            --titlebar-text:   #2a2a2a;
+            --titlebar-border: rgba(0,0,0,0.07);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: url('./wallpaper.webp') center/cover no-repeat;
+            font-family: 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+        }
+
+        .window {
+            background: var(--win-bg);
+            backdrop-filter: blur(28px) saturate(1.4);
+            -webkit-backdrop-filter: blur(28px) saturate(1.4);
+            border: 1px solid var(--win-border);
+            border-radius: 14px;
+            position: absolute;
+            box-shadow: var(--win-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 280px;
+        }
+
+        /* Added the Resize Grabber visual */
+        .window::after {
+            content: "";
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid rgba(0,0,0,0.15);
+            border-bottom: 2px solid rgba(0,0,0,0.15);
+            pointer-events: none;
+        }
+
+        .title-bar {
+            padding: 11px 14px 10px;
+            background: var(--titlebar-bg);
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--titlebar-text);
+            border-bottom: 1px solid var(--titlebar-border);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+        .title-bar:active { cursor: grabbing; }
+
+        .close-btn {
+            background: var(--coral);
+            border: none;
+            color: rgba(255,255,255,0.95);
+            cursor: pointer;
+            font-size: 11px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            padding: 0;
+            opacity: 0.85;
+        }
+        .close-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        .content {
+            color: #1a1a1a;
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .taskbar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.62);
+            backdrop-filter: blur(24px) saturate(1.6);
+            -webkit-backdrop-filter: blur(24px) saturate(1.6);
+            padding: 10px 22px;
+            border-radius: 50px;
+            display: flex;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.92);
+            align-items: center;
+            z-index: 9999;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.07);
+        }
+
+        .taskbar-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            color: var(--blue);
+            text-transform: uppercase;
+            padding-right: 12px;
+            border-right: 1px solid rgba(0,0,0,0.1);
+            margin-right: 2px;
+        }
+
+        .app-icon {
+            background: rgba(255,255,255,0.65);
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+        }
+        .app-icon:hover {
+            background: white;
+            transform: translateY(-7px) scale(1.12);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.14);
+            border-color: rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import { h, render } from 'https://esm.sh/preact';
+        import { useState, useEffect, useRef } from 'https://esm.sh/preact/hooks';
+
+        // --- CORE SYSTEM SERVICES ---
+        import { bus } from './sys/bus.js';
+        import { getFS } from './sys/fs.js';
+
+        // --- USERSPACE APPLICATIONS ---
+        import Terminal    from './apps/terminal.js';
+        import Clock       from './apps/clock.js';
+        import Notepad     from './apps/notepad.js';
+        import Surfer      from './apps/surfer.js';
+        import FileManager from './apps/filemanager.js';
+
+        const APPS = {
+            surfer:      { title: '🏄 Surfer',         icon: '🏄', component: Surfer,      width: 800 },
+            terminal:    { title: '⌨️  Terminal',     icon: '⌨️', component: Terminal,    width: 560 },
+            clock:       { title: '🕒  Clock',        icon: '🕒', component: Clock,       width: 300 },
+            notepad:     { title: '📝  Notepad',      icon: '📝', component: Notepad,      width: 520 },
+            filemanager: { title: '🗂  File Manager', icon: '🗂', component: FileManager, width: 400 },
+        };
+
+        function WelcomeCard() {
+            const dot = (color) => h('div', { style: `width:8px; height:8px; border-radius:50%; background:${color}; flex-shrink:0;` });
+            const row = (icon, text) => h('div', {
+                style: 'display:flex; align-items:center; gap:10px; padding:5px 0; color:#555; font-size:13px;'
+            }, [ h('span', { style: 'font-size:15px; width:20px; text-align:center;' }, icon), h('span', null, text) ]);
+
+            return h('div', { style: 'padding:22px 20px;' }, [
+                h('div', { style: 'display:flex; align-items:center; gap:8px; margin-bottom:20px;' }, [
+                    dot('#5b9bd5'), dot('#e8736a'), dot('#c8e05a'),
+                    h('span', { style: 'font-size:17px; font-weight:700; letter-spacing:0.5px; color:#1a1a1a; margin-left:4px;' }, 'Orchid'),
+                    h('span', { style: 'font-size:11px; color:#bbb; font-weight:400;' }, 'v0.1'),
+                ]),
+                row('💾', 'Persistent virtual filesystem'),
+                row('⌨️', 'Terminal — ls, cd, cat, rm…'),
+                row('🗂', 'File Manager — browse & edit'),
+                row('📝', 'Notepad — dbl-click to open files'),
+                h('div', { style: 'margin-top:18px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.06); font-size:11px; color:#bbb; letter-spacing:0.3px;' },
+                    'Files persist across page refreshes ↓'
+                )
+            ]);
+        }
+
+        function Window({ title, children, initialX, initialY, onClose, onFocus, zIndex, width: initialWidth }) {
+            const [pos, setPos] = useState({ x: initialX, y: initialY });
+            const [size, setSize] = useState({ w: initialWidth ?? 400, h: 300 });
+            const [dragging, setDragging] = useState(false);
+            const [resizing, setResizing] = useState(false);
+            const [rel, setRel] = useState({ x: 0, y: 0 });
+
+            const onMouseDown = (e) => {
+                onFocus();
+                if (e.button !== 0) return;
+                setDragging(true);
+                setRel({ x: e.pageX - pos.x, y: e.pageY - pos.y });
+                e.preventDefault();
+            };
+
+            const startResize = (e) => {
+                onFocus();
+                setResizing(true);
+                setRel({ x: e.pageX - size.w, y: e.pageY - size.h });
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            useEffect(() => {
+                const handleMove = (e) => {
+                    if (dragging) {
+                        setPos({ x: e.pageX - rel.x, y: e.pageY - rel.y });
+                    } else if (resizing) {
+                        setSize({
+                            w: Math.max(280, e.pageX - rel.x),
+                            h: Math.max(150, e.pageY - rel.y)
+                        });
+                    }
+                };
+                const stop = () => { setDragging(false); setResizing(false); };
+
+                if (dragging || resizing) {
+                    window.addEventListener('mousemove', handleMove);
+                    window.addEventListener('mouseup', stop);
+                }
+                return () => {
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('mouseup', stop);
+                };
+            }, [dragging, resizing, rel]);
+
+            return h('div', {
+                class: 'window',
+                style: {
+                    left: `${pos.x}px`,
+                    top: `${pos.y}px`,
+                    zIndex,
+                    width: `${size.w}px`,
+                    height: `${size.h}px`
+                },
+                onMouseDown: onFocus
+            }, [
+                h('div', { class: 'title-bar', onMouseDown }, [
+                    h('span', null, title),
+                    h('button', { class: 'close-btn', onClick: (e) => { e.stopPropagation(); onClose(); } }, '✕')
+                ]),
+                h('div', { class: 'content' }, children),
+                h('div', {
+                    onMouseDown: startResize,
+                    style: 'position:absolute; bottom:0; right:0; width:15px; height:15px; cursor:nwse-resize; z-index:10;'
+                })
+            ]);
+        }
+
+        function Desktop() {
+            const [windows, setWindows] = useState([
+                { id: 1, appKey: 'welcome', title: 'Orchid', x: 60, y: 55, width: 310, component: WelcomeCard }
+            ]);
+            const [topZ, setTopZ] = useState(10);
+            const [windowZs, setWindowZs] = useState({ 1: 10 });
+            const appWindowMap = useRef({});
+
+            useEffect(() => {
+                const unsub = bus.on('focus-app', (appKey) => {
+                    const id = appWindowMap.current[appKey];
+                    if (id != null) {
+                        const newZ = topZ + 1;
+                        setTopZ(newZ);
+                        setWindowZs(prev => ({ ...prev, [id]: newZ }));
+                    } else {
+                        launch(appKey);
+                    }
+                });
+                return unsub;
+            }, [topZ]);
+
+            const launch = (appKey) => {
+                const app = APPS[appKey];
+                if (!app) return;
+                const newZ = topZ + 1;
+                const newId = Date.now();
+                setTopZ(newZ);
+                setWindowZs(prev => ({ ...prev, [newId]: newZ }));
+                appWindowMap.current[appKey] = newId;
+                setWindows(prev => [...prev, {
+                    id: newId, appKey,
+                    title: app.title,
+                    x: 80 + (prev.length % 7) * 32,
+                    y: 80 + (prev.length % 7) * 32,
+                    width: app.width,
+                    component: app.component
+                }]);
+            };
+
+            const closeWindow = (id, appKey) => {
+                setWindows(prev => prev.filter(w => w.id !== id));
+                setWindowZs(prev => { const n = { ...prev }; delete n[id]; return n; });
+                if (appWindowMap.current[appKey] === id) delete appWindowMap.current[appKey];
+            };
+
+            const focusWindow = (id, appKey) => {
+                const newZ = topZ + 1;
+                setTopZ(newZ);
+                setWindowZs(prev => ({ ...prev, [id]: newZ }));
+                appWindowMap.current[appKey] = id;
+            };
+
+            return h('div', { style: 'height:100vh; width:100vw;' }, [
+                windows.map(w => h(Window, {
+                    key: w.id, title: w.title,
+                    initialX: w.x, initialY: w.y,
+                    width: w.width,
+                    zIndex: windowZs[w.id] ?? 10,
+                    onClose: () => closeWindow(w.id, w.appKey),
+                    onFocus: () => focusWindow(w.id, w.appKey)
+                }, h(w.component))),
+
+                h('div', { class: 'taskbar' }, [
+                    h('span', { class: 'taskbar-label' }, 'Orchid'),
+                    ...Object.keys(APPS).map(key => h('button', {
+                        class: 'app-icon',
+                        onClick: () => launch(key),
+                        title: APPS[key].title
+                    }, APPS[key].icon))
+                ])
+            ]);
+        }
+
+        render(h(Desktop), document.getElementById('app'));
+    </script>
+</body>
+</html>
